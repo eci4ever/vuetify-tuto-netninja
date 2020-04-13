@@ -4,9 +4,10 @@
         <v-btn color="success" class="text--white" dark v-on="on">Add new project</v-btn>
       </template>
       <v-card>
+        <v-form class="px-3" ref="form" @submit.prevent="submit">
         <v-card-title class="headline">Add new project</v-card-title>
         <v-card-text>
-            <v-form class="px-3" ref="form">
+            
                 <v-text-field label="Title" v-model="title" 
                 :rules="titleRules" prepend-icon="folder"></v-text-field>
                 <v-textarea label="Content" v-model="content" 
@@ -21,18 +22,20 @@
                   </template>
                   <v-date-picker v-model="date" @input="menu2 = false"></v-date-picker>
                 </v-menu>
-            </v-form>
+            
         </v-card-text>
         <v-card-actions>
           <v-spacer></v-spacer>
           <v-btn color="blue darken-1" text @click="dialog = false">Close</v-btn>
-          <v-btn color="blue darken-1" text @click="submit">Save</v-btn>
+          <v-btn type="submit" color="blue darken-1" text @click="dialog = false" :loading="loader">Save</v-btn>
         </v-card-actions>
+        </v-form>
       </v-card>
     </v-dialog>
 </template>
 <script>
 import moment from 'moment'
+import db from '../firebase'
 
 export default {
     data: () => ({
@@ -42,12 +45,28 @@ export default {
       content: '',
       contentRules: [v => !!v || 'Content is required'],
       date: new Date().toISOString().substr(0, 10),
-      menu2: false
+      menu2: false,
+      loader: false,
     }),
     methods: {
         submit() {
-            if (this.$refs.form.validate())
-            console.log(this.title, this.content, this.date)
+            if (this.$refs.form.validate()) {
+              this.loader = true
+              const project = {
+                title: this.title,
+                content: this.content,
+                due: this.date,
+                person: 'eci1' 
+              }
+            db.collection('projects').add(project)
+            .then(() => { 
+              this.loader = false,
+              this.$emit('snack-bar') 
+              })
+            .catch(err => console.log(err))
+          } else {
+            this.dialog = true
+          }
         }
     },
     computed: {
